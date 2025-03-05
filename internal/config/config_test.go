@@ -15,7 +15,7 @@ func createDefaultConfigFile() {
 	// encoding with indentation
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "    ")
-	err = encoder.Encode(&struct{
+	err = encoder.Encode(&struct {
 		DbUrl string `json:"db_url"`
 	}{
 		DbUrl: "postgres://example",
@@ -67,7 +67,7 @@ func TestSetUser(t *testing.T) {
 		t.Error("expected config to be created")
 		return
 	}
-	
+
 	if err := config.SetUser("test"); err != nil {
 		t.Errorf("expected no error, got %v", err)
 	}

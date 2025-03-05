@@ -2,9 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	// "errors"
 	"fmt"
-	// "log"
 	"os"
 	"path/filepath"
 )
@@ -14,7 +12,7 @@ const (
 )
 
 type Config struct {
-	DbUrl 			string `json:"db_url"`
+	DbUrl           string `json:"db_url"`
 	CurrentUserName string `json:"current_user_name"`
 }
 
@@ -23,7 +21,6 @@ func NewConfig() *Config {
 }
 
 func Read() (*Config, error) {
-	
 	file, err := openToReadConfigFile()
 	if err != nil {
 		return nil, fmt.Errorf("unable to read config file: %w", err)
@@ -49,6 +46,7 @@ func (c *Config) SetUser(user string) error {
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "    ")
 	err = encoder.Encode(c)
 	if err != nil {
 		return fmt.Errorf("unable to set user %v: %w", user, err)
@@ -78,7 +76,9 @@ func openToWriteConfigFile() (*os.File, error) {
 	}
 	filepath := filepath.Join(userHomeDir, configFileName)
 
-	file, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	file, err := os.OpenFile(
+		filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644,
+	)
 	if err != nil {
 		return nil, err
 	}

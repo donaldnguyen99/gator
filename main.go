@@ -1,23 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
-	"github.com/donaldnguyen99/gator/internal/config"
+	"github.com/donaldnguyen99/gator/internal/cli"
 )
 
 func main() {
-	c, err := config.Read()
-	if err != nil {
+	gator_cli := cli.NewCLI("gator")
+	if err := gator_cli.Run(); err != nil {
 		log.Fatal(err)
 	}
-
-	c.SetUser("donald")
-
-	c, err = config.Read()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(*c)
 }

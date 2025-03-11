@@ -2,13 +2,21 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/donaldnguyen99/gator/internal/projectpath"
+	"github.com/joho/godotenv"
 )
 
 const (
 	configFileName = ".gatorconfig.json"
+)
+
+var (
+	dbURL = getDbURL()
 )
 
 type Config struct {
@@ -21,7 +29,7 @@ func NewConfig() *Config {
 }
 
 func Read() (*Config, error) {
-	file, err := openToReadConfigFile()
+	file, err := openToReadConfigFile(configFileName)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read config file: %w", err)
 	}
@@ -39,7 +47,7 @@ func Read() (*Config, error) {
 func (c *Config) SetUser(user string) error {
 	c.CurrentUserName = user
 
-	file, err := openToWriteConfigFile()
+	file, err := openToWriteConfigFile(configFileName)
 	if err != nil {
 		return fmt.Errorf("unable to set user %v: %w", user, err)
 	}
@@ -55,13 +63,62 @@ func (c *Config) SetUser(user string) error {
 	return nil
 }
 
-func openToReadConfigFile() (*os.File, error) {
+func getDbURL() string {
+	envFile, err := godotenv.Read(filepath.Join(projectpath.Root, ".env"))
+	if err != nil {
+		panic(err)
+	}
+
+	postgresUser     := envFile["POSTGRES_USER"]
+	postgresPassword := envFile["POSTGRES_PASSWORD"]
+	postgresDb       := envFile["POSTGRES_DB"]
+	postgresHost     := envFile["POSTGRES_HOST"]
+	postgresPort     := envFile["POSTGRES_PORT"]
+	postgresSslmode  := envFile["POSTGRES_SSLMODE"]
+	if postgresSslmode == "disable" {
+		return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		postgresUser, postgresPassword, postgresHost, postgresPort, postgresDb, postgresSslmode)
+	} else {
+		return fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
+		postgresUser, postgresPassword, postgresHost, postgresPort, postgresDb)
+	}
+}
+
+
+func createDefaultConfigFile(configFileName string) error {
+	file, err := openToWriteConfigFile(configFileName)
+	if err != nil {
+		return fmt.Errorf("failed to create config file: %w", err)
+	}
+	defer file.Close()
+
+	// encoding with indentation
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "    ")
+	err = encoder.Encode(&struct {
+		DbUrl string `json:"db_url"`
+	}{
+		DbUrl: dbURL,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to encode config file: %w", err)
+	}
+	return nil
+}
+
+func openToReadConfigFile(configFileName string) (*os.File, error) {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
 	}
 	filepath := filepath.Join(userHomeDir, configFileName)
 
+	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
+		fmt.Printf("Config file not found at %s, creating default config file...\n", filepath)
+		if err2 := createDefaultConfigFile(configFileName); err2 != nil {
+			return nil, err2
+		}
+	}
 	file, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
@@ -69,7 +126,7 @@ func openToReadConfigFile() (*os.File, error) {
 	return file, nil
 }
 
-func openToWriteConfigFile() (*os.File, error) {
+func openToWriteConfigFile(configFileName string) (*os.File, error) {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err

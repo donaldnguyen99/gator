@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/donaldnguyen99/gator/internal/config"
+	"github.com/donaldnguyen99/gator/internal/database"
+	_ "github.com/lib/pq"
 )
 
 type CLI struct {
@@ -29,7 +32,12 @@ func (cli *CLI) Run() error {
 	if err != nil {
 		return err
 	}
+	db, err := sql.Open("postgres", config.DbUrl)
+	if err != nil {
+		return fmt.Errorf("failed to open database: %w", err)
+	}
 	cli.state = &state{
+		db: database.New(db),
 		config: config,
 	}
 

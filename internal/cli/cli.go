@@ -42,6 +42,8 @@ func (cli *CLI) Run() error {
 	}
 
 	cli.commands.register("login", handlerLogin)
+	cli.commands.register("register", handlerRegisterUser)
+	cli.commands.register("reset", handlerReset)
 
 	args := os.Args[1:]
 	if len(args) == 0 {

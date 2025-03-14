@@ -48,6 +48,25 @@ func handlerRegisterUser(s *state, cmd command) error {
 	return nil
 }
 
+func handlerGetUsers(s *state, cmd command) error {
+	if len(cmd.args) != 0 {
+		return fmt.Errorf("get users requires 0 arguments")
+	}
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("error handling get users: %w", err)
+	}
+	
+	for _, u := range users {
+		if u.Name == s.config.CurrentUserName {
+			fmt.Printf("* %v (current)\n", u.Name)
+		} else {
+			fmt.Printf("* %v\n", u.Name)
+		}
+	}
+	return nil
+}
+
 func handlerReset(s *state, cmd command) error {
 	if len(cmd.args) != 0 {
 		return fmt.Errorf("reset requires 0 arguments")

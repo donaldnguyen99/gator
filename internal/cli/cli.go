@@ -45,6 +45,9 @@ func (cli *CLI) Run() error {
 	cli.commands.register("register", handlerRegisterUser)
 	cli.commands.register("users", handlerGetUsers)
 	cli.commands.register("reset", handlerReset)
+	cli.commands.register("agg", handlerAggregateFeeds)
+	cli.commands.register("addfeed", handlerAddFeed)
+	cli.commands.register("feeds", handlerGetFeeds)
 
 	args := os.Args[1:]
 	if len(args) == 0 {

@@ -48,6 +48,8 @@ func (cli *CLI) Run() error {
 	cli.commands.register("agg", handlerAggregateFeeds)
 	cli.commands.register("addfeed", handlerAddFeed)
 	cli.commands.register("feeds", handlerGetFeeds)
+	cli.commands.register("follow", handlerFollowFeed)
+	cli.commands.register("following", handlerListFollows)
 
 	args := os.Args[1:]
 	if len(args) == 0 {

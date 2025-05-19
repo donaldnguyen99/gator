@@ -46,10 +46,11 @@ func (cli *CLI) Run() error {
 	cli.commands.register("users", handlerGetUsers)
 	cli.commands.register("reset", handlerReset)
 	cli.commands.register("agg", handlerAggregateFeeds)
-	cli.commands.register("addfeed", handlerAddFeed)
+	cli.commands.register("addfeed", middlewareLoggedIn(handlerAddFeed))
 	cli.commands.register("feeds", handlerGetFeeds)
-	cli.commands.register("follow", handlerFollowFeed)
-	cli.commands.register("following", handlerListFollows)
+	cli.commands.register("follow", middlewareLoggedIn(handlerFollowFeed))
+	cli.commands.register("following", middlewareLoggedIn(handlerListFollows))
+	cli.commands.register("unfollow", middlewareLoggedIn(handlerUnfollowFeed))
 
 	args := os.Args[1:]
 	if len(args) == 0 {

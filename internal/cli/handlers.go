@@ -97,7 +97,7 @@ func handlerAggregateFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 2 {
 		return fmt.Errorf("addfeed requires 2 arguments (name, url), got %v arguments", len(cmd.args))
 	}
@@ -106,10 +106,6 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	if s.config.CurrentUserName == "" {
 		return fmt.Errorf("no user logged in")
-	}
-	user, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("no user found: %w", err)
 	}
 
 	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
@@ -150,12 +146,7 @@ func handlerGetFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowFeed(s *state, cmd command) error {
-	user, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("no user found: %w", err)
-	}
-
+func handlerFollowFeed(s *state, cmd command, user database.User) error {
 	url := cmd.args[0]
 
 	feed, err := s.db.GetFeed(context.Background(), url)
@@ -175,18 +166,29 @@ func handlerFollowFeed(s *state, cmd command) error {
 		return fmt.Errorf("error handling follow feed: %w", err)
 	}
 
-	fmt.Printf("Feed %v, %v has been followed\n", feed.Name, user.Name)
+	fmt.Printf("Feed %v, has been followed by %v\n", feed.Name, user.Name)
 
 	return nil
 }
 
-func handlerListFollows(s *state, cmd command) error {
+func handlerListFollows(s *state, cmd command, user database.User) error {
 	feed_follows, err := s.db.GetFeedFollowsForUser(context.Background(), s.config.CurrentUserName)
 	if err != nil {
 		return fmt.Errorf("error handling list follows: %w", err)
 	}
 	for _, feed_follow := range feed_follows {
 		fmt.Printf("Feed %v, %v\n", feed_follow.FeedName, feed_follow.UserName)
+	}
+	return nil
+}
+
+func handlerUnfollowFeed(s *state, cmd command, user database.User) error {
+	err := s.db.DeleteFeedFollowForUser(context.Background(), database.DeleteFeedFollowForUserParams{
+		UserName: user.Name,
+		FeedUrl:  cmd.args[0],
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }

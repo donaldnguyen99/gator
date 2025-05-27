@@ -82,19 +82,24 @@ func handlerReset(s *state, cmd command) error {
 }
 
 func handlerAggregateFeeds(s *state, cmd command) error {
-	// TODO: may need to change behavior
-	if len(cmd.args) == 0 {
-		return fmt.Errorf("feed requires at least 1 argument")
+	if len(cmd.args) != 1 {
+		return fmt.Errorf("agg requires 1 argument, time_betweeen_reqs")
 	}
 
-	feeds, err := rss.AggregateFeeds(context.Background(), cmd.args)
+	timeBetweenRequests, err := time.ParseDuration(cmd.args[0])
 	if err != nil {
-		return fmt.Errorf("error handling fetch feed: %w", err)
+		return err
 	}
-	for _, feed := range feeds {
-		fmt.Printf("Feed %v has been fetched\n", feed)
+	timeBetweenRequests = min(max(timeBetweenRequests, 1*time.Second), 1*time.Hour)
+	fmt.Printf("Collecting feeds every %s\n", timeBetweenRequests.String())
+
+	ticker := time.NewTicker(timeBetweenRequests)
+	for ; ; <-ticker.C {
+		err := scrapeFeeds(s)
+		if err != nil {
+			return err
+		}
 	}
-	return nil
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {
@@ -190,5 +195,27 @@ func handlerUnfollowFeed(s *state, cmd command, user database.User) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func scrapeFeeds(s *state) error {
+	nextFeed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return err
+	}
+
+	err = s.db.MarkFeedFetched(context.Background(), nextFeed.ID)
+	if err != nil {
+		return err
+	}
+
+	rssFeed, err := rss.FetchFeed(context.Background(), nextFeed.Url)
+	if err != nil {
+		return err
+	}
+
+	rssFeed.Print()
+	// TODO: Store posts later instead
+
 	return nil
 }

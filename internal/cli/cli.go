@@ -51,6 +51,7 @@ func (cli *CLI) Run() error {
 	cli.commands.register("follow", middlewareLoggedIn(handlerFollowFeed))
 	cli.commands.register("following", middlewareLoggedIn(handlerListFollows))
 	cli.commands.register("unfollow", middlewareLoggedIn(handlerUnfollowFeed))
+	cli.commands.register("browse", middlewareLoggedIn(handlerBrowsePosts))
 
 	args := os.Args[1:]
 	if len(args) == 0 {

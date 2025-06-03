@@ -3,6 +3,9 @@ package cli
 import (
 	"context"
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/donaldnguyen99/gator/internal/database"
@@ -214,8 +217,60 @@ func scrapeFeeds(s *state) error {
 		return err
 	}
 
-	rssFeed.Print()
+	// rssFeed.Print()
 	// TODO: Store posts later instead
+	for _, item := range rssFeed.Channel.Items {
+
+		pubDate, err := item.ParsePubDate()
+		if err != nil {
+			return err
+		}
+
+		// TODO: fix: if post already exists, ignore errors
+		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: item.Description,
+			PublishedAt: pubDate,
+			FeedID:      nextFeed.ID,
+		})
+
+		if err != nil && !strings.Contains(err.Error(), "duplicate key") {
+			log.Print(err)
+		}
+	}
+
+	return nil
+}
+
+func handlerBrowsePosts(s *state, cmd command, user database.User) error {
+	limit := 2
+	if len(cmd.args) > 0 {
+		res, err := strconv.Atoi(cmd.args[0])
+		if err != nil {
+			return err
+		}
+		limit = res
+	}
+
+	posts, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+		Name:  user.Name,
+		Limit: int32(limit),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for _, post := range posts {
+		fmt.Printf("Title: %s\n", post.Title)
+		fmt.Printf("Description: %s\n", post.Description)
+		fmt.Printf("Link: %s\n", post.Url)
+		fmt.Printf("Published: %s\n\n", post.PublishedAt.Format(time.RFC1123))
+	}
 
 	return nil
 }

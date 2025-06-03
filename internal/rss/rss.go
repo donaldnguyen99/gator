@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"time"
 )
 
 type RSSFeed struct {
@@ -76,10 +77,10 @@ func (r *RSSFeed) Print() {
 	fmt.Printf("  Link: %s\n", r.Channel.Link)
 	fmt.Printf("  Description: %s\n", r.Channel.Description)
 	fmt.Print( "  Items:\n")
-	r.PrintItem(true, false, false, false)
+	r.PrintItems(true, false, false, true)
 }
 
-func (r *RSSFeed) PrintItem(title bool, link bool, desc bool, date bool) {
+func (r *RSSFeed) PrintItems(title bool, link bool, desc bool, date bool) {
 	for _, item := range r.Channel.Items {
 		if title {
 			fmt.Printf("    Title: %s\n", item.Title)
@@ -94,4 +95,25 @@ func (r *RSSFeed) PrintItem(title bool, link bool, desc bool, date bool) {
 			fmt.Printf("    PubDate: %s\n", item.PubDate)
 		}
 	}
+}
+
+func (r *RSSItem) ParsePubDate() (time.Time, error) {
+	layouts := []string{
+		// TODO: Add layouts here
+		time.RFC1123Z,
+		time.RFC3339,
+	}
+
+	for _, layout := range layouts {
+		pubDate, err := time.Parse(layout, r.PubDate)
+		if err != nil {
+			continue
+		}
+		return pubDate, nil
+	}
+
+	return time.Time{},
+		fmt.Errorf(
+			"error parsing pub date: unable to parse to time.Time from %s", 
+			r.PubDate)
 }

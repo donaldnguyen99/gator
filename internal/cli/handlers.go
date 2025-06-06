@@ -93,7 +93,7 @@ func handlerAggregateFeeds(s *state, cmd command) error {
 	if err != nil {
 		return err
 	}
-	timeBetweenRequests = min(max(timeBetweenRequests, 1*time.Second), 1*time.Hour)
+	timeBetweenRequests = min(max(timeBetweenRequests, 1*time.Second), 24*time.Hour)
 	fmt.Printf("Collecting feeds every %s\n", timeBetweenRequests.String())
 
 	ticker := time.NewTicker(timeBetweenRequests)
@@ -155,6 +155,9 @@ func handlerGetFeeds(s *state, cmd command) error {
 }
 
 func handlerFollowFeed(s *state, cmd command, user database.User) error {
+	if len(cmd.args) != 1 {
+		return fmt.Errorf("follow requires 1 argument, feed_url")
+	}
 	url := cmd.args[0]
 
 	feed, err := s.db.GetFeed(context.Background(), url)
@@ -191,6 +194,9 @@ func handlerListFollows(s *state, cmd command, user database.User) error {
 }
 
 func handlerUnfollowFeed(s *state, cmd command, user database.User) error {
+	if len(cmd.args) != 1 {
+		return fmt.Errorf("unfollow requires 1 argument, feed_url")
+	}
 	err := s.db.DeleteFeedFollowForUser(context.Background(), database.DeleteFeedFollowForUserParams{
 		UserName: user.Name,
 		FeedUrl:  cmd.args[0],
@@ -218,7 +224,6 @@ func scrapeFeeds(s *state) error {
 	}
 
 	// rssFeed.Print()
-	// TODO: Store posts later instead
 	for _, item := range rssFeed.Channel.Items {
 
 		pubDate, err := item.ParsePubDate()
@@ -226,7 +231,6 @@ func scrapeFeeds(s *state) error {
 			return err
 		}
 
-		// TODO: fix: if post already exists, ignore errors
 		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
 			ID:          uuid.New(),
 			CreatedAt:   time.Now(),

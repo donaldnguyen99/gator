@@ -66,7 +66,12 @@ func (c *Config) SetUser(user string) error {
 func getDbURL() string {
 	envFile, err := godotenv.Read(filepath.Join(projectpath.Root, ".env"))
 	if err != nil {
-		panic(err)
+		value, exists := os.LookupEnv("GATOR_POSTGRES_URL")
+		if exists {
+			return value + "?sslmode=disable"
+		} else {
+			panic(fmt.Errorf("env variable GATOR_POSTGRES_URL not set"))
+		}
 	}
 
 	postgresUser     := envFile["POSTGRES_USER"]
